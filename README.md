@@ -37,3 +37,6 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/[USERN
 ## Code of Conduct
 
 Everyone interacting in the ScrapperBovespa project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/scrapper_bovespa/blob/master/CODE_OF_CONDUCT.md).
+=======
+# scrapper_bovespa
+A scrapper that extracts data from BOVESPA's webservice in a standard way.
