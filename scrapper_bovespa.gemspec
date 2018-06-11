@@ -38,4 +38,5 @@ For the webservice you will need a registry, which can be done in this website h
   spec.add_development_dependency "rake", "~> 10.0"
   spec.add_development_dependency "rspec", "~> 3.0"
   spec.add_development_dependency "nokogiri", "~> 1.8"
+  spec.add_development_dependency "json", "~> 1.8"
 end
