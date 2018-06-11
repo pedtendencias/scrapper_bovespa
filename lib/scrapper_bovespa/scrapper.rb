@@ -29,6 +29,15 @@ class Scrapper
 	end
 
 	def get_company_data()
+		proxy = ScrapeCompanys.new()
+		cvms = proxy.get_cvms()
+		output = []
+
+		cvms.each do |cvm|
+			output << proxy.get_company_data(cvm)
+		end
+
+		output.to_json
 	end
 end
 
@@ -40,7 +49,13 @@ class ScrapeCompanys
 
 	def extract_simple_text(source)
 		simplified = source[0].reverse
-		simplified = simplified[(simplified.index(">dt/<") + 5)..(simplified.index(">dt<") - 1)]
+
+		begin
+			simplified = simplified[(simplified.index(">dt/<") + 5)..(simplified.index(">dt<") - 1)]
+		rescue => e
+			simplified = simplified[(simplified.index(">dt/<") + 5)..(simplified.index("\>\""))]
+		end
+
 		simplified.reverse
 	end
 
@@ -50,8 +65,42 @@ class ScrapeCompanys
 		simplified.reverse
 	end
 
-	def extract_par_th(source)
-		puts source
+	def extract_data_composicao_capital_social(source)
+		simplified = source[0]
+		simplified[3..simplified.size]
+	end
+
+	def extract_many_th(source)
+		divided = source[0].split("\r\n")
+		simplified = divided[1..divided.size]
+		output = []
+
+		simplified.each do |s|
+			s.reverse!
+
+			if s.index(">ht/<") != nil then
+				begin
+					output << s[(s.index(">ht/<") + 4)..(s.index(">\"") - 1)].reverse
+				rescue => e
+					output << s[(s.index(">ht/<") + 4)..(s.index(">h") - 1)]
+				end
+			end
+		end
+
+		output	
+	end
+
+	def extract_many_td(source)
+		divided = source[0].split("\r\n")
+		simplified = divided[1..divided.size]
+		output = []
+
+		simplified.each do |s|
+			s.reverse!
+			output << s[(s.index(">dt/<") + 4)..(s.index(">\"") - 1)].reverse
+		end
+
+		output	
 	end
 
 	def get_company_data(cvm)
@@ -61,47 +110,38 @@ class ScrapeCompanys
 		output[:cnpj] = extract_simple_text(source.scan(/CNPJ.+\r\n.+\<\/td\>/))
 		output[:site] = extract_site(source.scan(/Site:\<\/td\>\r\n.+\<\/a\>/))
 
-		cabecalho = extract_par_th(source.scan(/Balan.o Patrimonial.+\r\n.+\r\n.+\<\/th\>/))
-=begin
-		ativo_permanente = source.scan(/Ativo Permanente\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		ativo_total = source.scan(/Ativo Total\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		patrimonio_liquido = source.scan(/Patrimônio Líquido\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-
-		#separa os dados em a e b
-		output[:balanco_patrimonial] = {ativo_permanente: [ativo_p_a, ativo_p_b],
-																		ativo_total: [ativo_t_a, ativo_t_b],
-																		patrimonio_liquido: [patrimonio_a, patrimonio_b],
-																		periodo: [data_a, data_b]}
-
-		cabecalho_demonstracao_resultado = source.scan(/Demonstração do Resultado - Não-Consolidado\:\<\/th\>\<th\>.+\<\/th\>\<th\>.+\<\/th\>/)
-		receitas = source.scan(/Receitas da Intermediação Financeira\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		resultado_bruto = source.scan(/Resultado Bruto da Intermediação Financeira\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		resultado_operacional = source.scan(/Resultado Operacional\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		lucro = source.scan(/Lucro (Prejuízo) Líquido\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-
-		#separa os dados em a e b
-		output[:demonstracao_do_resultado] = {receitas_da_intermediacao_financeira: [receitas_i_a, receitas_i_b],
-																					resultado_bruto_da_intermediacao_financeira: [resultado_b_a, resultado_b_b],
-																					resultado_operacional: [resultado_a, resultado_b],
-																					lucro_liquido: [lucro_a, lucro_b],
-																					periodo: [periodo_a, periodo_b]}
-
+		output[:balanco_patrimonial] = {}
+		output[:balanco_patrimonial][:periodo] = extract_many_th(source.scan(/Balan.+\r\n.+\r\n.+\r\n/))
+		output[:balanco_patrimonial][:ativo_permanente] = extract_many_td(source.scan(/Ativo Permanente.+\r\n.+\r\n.+\r\n/))
+		output[:balanco_patrimonial][:ativo_total] = extract_many_td(source.scan(/Ativo Total.+\r\n.+\r\n.+\r\n/))
+		output[:balanco_patrimonial][:patromonio_liquido] = extract_many_td(source.scan(/Patrim.+nio L.+quido.+\r\n.+\r\n.+\r\n/))
 		
-		cabecalho_fluxo_caixa = source.scan(/Demonstração do Fluxo de Caixa - Não-Consolidado\:\<\/th\>\<th\>.+\<\/th\>\<th\>.+\<\/th\>/)
-		operacionais = source.scan(/Atividades Operacionais\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		investimento = source.scan(/Atividades de Investimento\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		financiamento = source.scan(/Atividades de Financiamento\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		variacao = source.scan(/Variação Cambial sobre Caixa e Equivalentes\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
-		aumento = source.scan(/Aumento (Redução) de Caixa e Equivalentes\:\<\/td\>\<td\>.+\<\/td\>\<td\>.+\<\/td\>/)
+		output[:demonstracao_do_resultado] = {}
+		output[:demonstracao_do_resultado][:periodo] = extract_many_th(source.scan(/Demonstra.+o do Resultado.+\r\n.+\r\n.+\r\n.+\r\n/))
+		output[:demonstracao_do_resultado][:receitas_da_intermediacao_financeira] = extract_many_td(source.scan(/Receitas da Intermedia.+ Financeira.+\r\n.+\r\n.+\r\n/))
+		output[:demonstracao_do_resultado][:resultado_bruto_de_intermediacao_financeira] = extract_many_td(source.scan(/Resultado Bruto da Intermedia.+ Financeira.+\r\n.+\r\n.+\r\n/))
+		output[:demonstracao_do_resultado][:resultado_operacional] = extract_many_td(source.scan(/Resultado Operacional.+\r\n.+\r\n.+\r\n/))
+		output[:demonstracao_do_resultado][:lucro_liquido] = extract_many_td(source.scan(/Lucro .+ L.+quido.+\r\n.+\r\n.+\r\n/))
 
-		#separa os dados em a e b
-		output[:demonstracao_do_fluxo_de_caixa] = {atividades_operacionais: [operacionais_a, operacionais_b],
-		atividades_de_investimento: [investimento_a, investimento_b],
-		atividades_de_financiamento: [financiamento_a, financiamento_b],
-		variacao_cambial_sobre_caixa_e_equivalentes: [variacao_a, variacao_b],
-		aumento_de_caixa_e_equivalentes: [aumento_a, aumento_b],
-		periodo: [periodo_a, periodo_b]}	
-=end
+		output[:demonstracao_do_fluxo_de_caixa] = {
+		periodo: extract_many_th(source.scan(/Demonstra.+ do Fluxo de Caixa.+\r\n.+\r\n.+\r\n/)),
+		atividades_operacionais: extract_many_td(source.scan(/Atividades Operacionais.+\r\n.+\r\n.+\r\n/)),
+		atividades_de_investimento: extract_many_td(source.scan(/Atividades de Investimento.+\r\n.+\r\n.+\r\n/)),
+		atividades_de_financiamento: extract_many_td(source.scan(/Atividades de Financiamento.+\r\n.+\r\n.+\r\n/)),
+		variacao_cambial_sobre_caixa_e_equivalentes: extract_many_td(source.scan(/Varia.+o Cambial sobre Caixa e Equivalentes.+\r\n.+\r\n.+\r\n/)),
+		aumento_de_caixa_e_equivalentes: extract_many_td(source.scan(/Aumento .+ de Caixa e Equivalentes.+\r\n.+\r\n.+\r\n/))}
+	
+		output[:posicao_acionaria] = {
+			headings: extract_many_th(source.scan(/\<th\>Nome.+\r\n.+\r\n.+\r\n.+\r\n/)),
+			outros: extract_many_td(source.scan(/\<td\>Outros.+\n.+\n.+\n.+\n/)),
+			total: extract_many_td(source.scan(/\<td\>Total.+\n.+\<td.+\n.+\<td.+\n.+\<td.+\n/))}
+
+		output[:composicao_capital_social] = {
+			data: extract_data_composicao_capital_social(source.scan(/ - [0-9]+\/[0-9]+\/[0-9]+/)),
+			ordinarias: extract_simple_text(source.scan(/Ordin.+rias.+\n.+\n/)),
+			preferenciais: extract_simple_text(source.scan(/Preferenciais.+\n.+\n/)),
+			total: extract_simple_text(source.scan(/Total.+\n.+\n.+\<\/tr/))}
+
 		output
 	end
 
