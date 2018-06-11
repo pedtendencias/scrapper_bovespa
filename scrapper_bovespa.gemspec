@@ -6,7 +6,7 @@ require "scrapper_bovespa/version"
 Gem::Specification.new do |spec|
   spec.name          = "scrapper_bovespa"
   spec.version       = ScrapperBovespa::VERSION
-  spec.authors       = [""]
+  spec.authors       = ["Rafael Campos Ferreira da Cruz"]
   spec.email         = ["rafaelcpcruz@hotmail.com"]
 
   spec.summary       = %q{A gem to easely extract company and stock informatiion from BOVESPA.}
@@ -15,15 +15,8 @@ Gem::Specification.new do |spec|
 For the webservice you will need a registry, which can be done in this website http://blog.cedrotech.com/como-integrar-o-market-data-bmfbovespa-via-servicos-rest-xml-ou-json/ .
 }
   spec.homepage      = "https://github.com/rCamposCruz/scrapper_bovespa"
+  spec.licenses    = ['MIT']
 
-  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
-  # to allow pushing to a single host or delete this section to allow pushing to any host.
-  if spec.respond_to?(:metadata)
-    spec.metadata["allowed_push_host"] = "'http://mygemserver.com'"
-  else
-    raise "RubyGems 2.0 or newer is required to protect against " \
-      "public gem pushes."
-  end
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
